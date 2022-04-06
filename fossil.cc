@@ -230,7 +230,7 @@ struct FossilInputScheme : InputScheme
         });
 
         if (auto res = getCache()->lookup(store, unlockedAttrs)) {
-            auto rev2 = Hash::parseAny(getStrAttr(res->first, "rev"), htSHA256);
+            auto rev2 = Hash::parseAny(getStrAttr(res->first, "rev"), htSHA1);
             if (!input.getRev() || input.getRev() == rev2) {
                 input.attrs.insert_or_assign("rev", rev2.to_string(Base16, false));
                 return makeResult(res->first, std::move(res->second));
@@ -250,8 +250,7 @@ struct FossilInputScheme : InputScheme
         runFsl({ "--chdir", ckout, "up", revOrRef });
 
         auto json = nlohmann::json::parse(runFsl({ "--chdir", ckout, "json", "status"}));
-        input.attrs.insert_or_assign("rev",
-            Hash::parseAny(std::string { json["payload"]["checkout"]["uuid"] }, htSHA256).to_string(Base16, false));
+        input.attrs.insert_or_assign("rev",std::string({ json["payload"]["checkout"]["uuid"] }, 0, 40));
 
         auto json2 = nlohmann::json::parse(runFsl({ "--chdir", ckout, "json", "branch", "list"}));
         input.attrs.insert_or_assign("ref", std::string { json2["payload"]["current"] });
