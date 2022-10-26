@@ -86,7 +86,7 @@ struct FossilInputScheme : InputScheme
     {
         auto url = parseURL(getStrAttr(input.attrs, "url"));
         url.scheme = "fsl+" + url.scheme;
-        if (auto rev = input.getRev()) url.query.insert_or_assign("rev", rev->to_string(Base16, false));
+        if (auto rev = input.getRev()) url.query.insert_or_assign("rev", rev->to_string(Base16, true));
         if (auto ref = input.getRef()) url.query.insert_or_assign("ref", *ref);
         return url;
     }
@@ -102,7 +102,7 @@ struct FossilInputScheme : InputScheme
         std::optional<Hash> rev) override
     {
         auto res(input);
-        if (rev) res.attrs.insert_or_assign("rev", rev->to_string(Base16, false));
+        if (rev) res.attrs.insert_or_assign("rev", rev->to_string(Base16, true));
         if (ref) res.attrs.insert_or_assign("ref", *ref);
         return res;
     }
@@ -230,9 +230,9 @@ struct FossilInputScheme : InputScheme
         });
 
         if (auto res = getCache()->lookup(store, unlockedAttrs)) {
-            auto rev2 = Hash::parseAny(getStrAttr(res->first, "rev"), htSHA1);
+            auto rev2 = Hash::parseAny(getStrAttr(res->first, "rev"), htSHA256);
             if (!input.getRev() || input.getRev() == rev2) {
-                input.attrs.insert_or_assign("rev", rev2.to_string(Base16, false));
+                input.attrs.insert_or_assign("rev", rev2.to_string(Base16, true));
                 return makeResult(res->first, std::move(res->second));
             }
         }
@@ -250,7 +250,8 @@ struct FossilInputScheme : InputScheme
         runFsl({ "--chdir", ckout, "up", revOrRef });
 
         auto json = nlohmann::json::parse(runFsl({ "--chdir", ckout, "json", "status"}));
-        input.attrs.insert_or_assign("rev",std::string({ json["payload"]["checkout"]["uuid"] }, 0, 40));
+        input.attrs.insert_or_assign("rev",
+            Hash::parseAny(std::string { json["payload"]["checkout"]["uuid"] }, htSHA256).to_string(Base16, true));
 
         auto json2 = nlohmann::json::parse(runFsl({ "--chdir", ckout, "json", "branch", "list"}));
         input.attrs.insert_or_assign("ref", std::string { json2["payload"]["current"] });
@@ -268,7 +269,7 @@ struct FossilInputScheme : InputScheme
         auto storePath = store->addToStore(name, ckout);
 
         Attrs infoAttrs({
-            {"rev", input.getRev()->to_string(Base16, false)},
+            {"rev", input.getRev()->to_string(Base16, true)},
         });
 
         if (!_input.getRev())
