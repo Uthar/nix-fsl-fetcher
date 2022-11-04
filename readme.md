@@ -4,7 +4,10 @@ Nix plugin that adds support for the `fsl+http`, `fsl+https`, `fsl+ssh`, `fsl+fi
 
 # usage
 
+Plugins require the same Nix version:
+
 ```
-nix build
-nix --extra-plugin-files ./result/bin/libnix-fsl-fetcher.so flake metadata fsl+https://fossil.galkowski.xyz/nix-fsl-fetcher
+export NIX_VERSION=2.11.0
+nix build --override-input nix nix/$NIX_VERSION
+nix run nix/$NIX_VERSION -- --extra-plugin-files ./result/bin/libnix-fsl-fetcher.so flake metadata fsl+https://fossil.galkowski.xyz/nix-fsl-fetcher
 ```
